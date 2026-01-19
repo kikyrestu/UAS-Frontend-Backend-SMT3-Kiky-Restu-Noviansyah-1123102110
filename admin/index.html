@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Ottobus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-900 text-white hidden md:flex flex-col">
+        <div class="h-16 flex items-center px-6 border-b border-gray-800">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold mr-3">O
+            </div>
+            <span class="text-xl font-bold tracking-tight">Ottobus Admin</span>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="#" onclick="showSection('dashboard')" id="nav-dashboard"
+                class="flex items-center px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-900/20 transition-all">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>
+                Dashboard
+            </a>
+            <a href="#" onclick="showSection('routes')" id="nav-routes"
+                class="flex items-center px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+                <i data-lucide="map" class="w-5 h-5 mr-3"></i>
+                Kelola Rute
+            </a>
+            <a href="#" onclick="showSection('content')" id="nav-content"
+                class="flex items-center px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+                <i data-lucide="file-text" class="w-5 h-5 mr-3"></i>
+                Konten Website
+            </a>
+            <a href="/" target="_blank"
+                class="flex items-center px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+                <i data-lucide="external-link" class="w-5 h-5 mr-3"></i>
+                Lihat Website
+            </a>
+        </nav>
+        <div class="p-4 border-t border-gray-800">
+            <button onclick="logout()"
+                class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
+                <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <!-- Mobile Header -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:hidden">
+            <span class="font-bold text-lg text-gray-900">Ottobus Admin</span>
+            <button onclick="logout()" class="text-gray-500"><i data-lucide="log-out"></i></button>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8" id="main-content">
+            <!-- Included via JS render -->
+        </main>
+    </div>
+
+    <!-- Add Route Modal -->
+    <div id="routeModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" aria-hidden="true"
+                onclick="closeModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div
+                            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i data-lucide="plus" class="text-blue-600 w-5 h-5"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Tambah Rute Baru
+                            </h3>
+                            <div class="mt-4">
+                                <form id="add-route-form" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kota Asal</label>
+                                        <input type="text" name="origin" placeholder="Contoh: Jakarta" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kota Tujuan</label>
+                                        <input type="text" name="destination" placeholder="Contoh: Surabaya" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kategori Bus</label>
+                                        <select name="category"
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white">
+                                            <option value="Executive Class">Executive Class</option>
+                                            <option value="Sleeper Bus">Sleeper Bus</option>
+                                            <option value="Super Double Decker">Super Double Decker</option>
+                                            <option value="Royal Class">Royal Class</option>
+                                            <option value="Economy Class">Economy Class</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Jumlah Kursi</label>
+                                        <input type="number" name="seat_capacity" placeholder="Contoh: 30" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Estimasi Durasi</label>
+                                        <input type="text" name="duration" placeholder="Contoh: 4 Jam 30 Menit"
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Fasilitas</label>
+                                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="AC"
+                                                    class="rounded text-blue-600 focus:ring-blue-500"> <span>AC</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="WiFi"
+                                                    class="rounded text-blue-600 focus:ring-blue-500"> <span>WiFi</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Toilet"
+                                                    class="rounded text-blue-600 focus:ring-blue-500">
+                                                <span>Toilet</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="USB"
+                                                    class="rounded text-blue-600 focus:ring-blue-500"> <span>USB
+                                                    Port</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Reclining"
+                                                    class="rounded text-blue-600 focus:ring-blue-500"> <span>Reclining
+                                                    Seat</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Meal"
+                                                    class="rounded text-blue-600 focus:ring-blue-500"> <span>Makan
+                                                    Gratis</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Blanket"
+                                                    class="rounded text-blue-600 focus:ring-blue-500">
+                                                <span>Selimut</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Deskripsi Singkat</label>
+                                        <textarea name="description" rows="3"
+                                            placeholder="Jelaskan keunggulan bus ini..."
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Foto Bus</label>
+                                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                            <div class="mb-3">
+                                                <label class="text-xs text-gray-500 mb-1 block">Opsi 1: Upload dari
+                                                    Komputer</label>
+                                                <input type="file" name="image_file_input" accept="image/*"
+                                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                            </div>
+                                            <div class="relative flex py-2 items-center">
+                                                <div class="flex-grow border-t border-gray-200"></div>
+                                                <span class="flex-shrink-0 mx-2 text-gray-400 text-xs">ATAU</span>
+                                                <div class="flex-grow border-t border-gray-200"></div>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-gray-500 mb-1 block">Opsi 2: Link Gambar
+                                                    (URL)</label>
+                                                <input type="url" name="image_url" placeholder="https://..."
+                                                    class="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Jam Berangkat</label>
+                                            <input type="time" name="time" required
+                                                class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Harga (Rp)</label>
+                                            <input type="text" name="price" placeholder="150.000" required
+                                                class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="mt-5 sm:mt-6 flex gap-3">
+                                        <button type="button" onclick="closeModal()"
+                                            class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
+                                            Batal
+                                        </button>
+                                        <button type="submit"
+                                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:text-sm">
+                                            Simpan Rute
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auth Check
+        if (!localStorage.getItem('adminToken')) {
+            window.location.href = '/admin/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/login.html';
+        }
+
+        // --- View Logic ---
+        let currentRoutes = [];
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                const tickets = data.tickets_today || 0;
+                const revenueVal = data.revenue_today || 0;
+                const routes = data.total_routes || 0;
+
+                document.getElementById('stat-tickets-today').innerText = tickets.toLocaleString();
+
+                // Format Revenue IDR
+                const revenue = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(revenueVal);
+                document.getElementById('stat-revenue-today').innerText = revenue;
+
+                document.getElementById('stat-routes').innerText = routes;
+            } catch (error) {
+                console.error('Failed to load stats', error);
+                document.getElementById('stat-tickets-today').innerText = "0";
+                document.getElementById('stat-revenue-today').innerText = "Rp 0";
+                document.getElementById('stat-routes').innerText = "0";
+            }
+        }
+
+        async function showSection(sectionId) {
+            document.getElementById('nav-dashboard').className = sectionId === 'dashboard' ? 'flex items-center px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-900/20 transition-all' : 'flex items-center px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all';
+            document.getElementById('nav-routes').className = sectionId === 'routes' ? 'flex items-center px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-900/20 transition-all' : 'flex items-center px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all';
+            document.getElementById('nav-content').className = sectionId === 'content' ? 'flex items-center px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-900/20 transition-all' : 'flex items-center px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all';
+
+            const mainContent = document.getElementById('main-content');
+            if (sectionId === 'dashboard') {
+                await renderDashboard(mainContent);
+                loadStats();
+            } else if (sectionId === 'routes') {
+                await renderRoutes(mainContent);
+            } else if (sectionId === 'content') {
+                await renderContentEditor(mainContent);
+            }
+            lucide.createIcons();
+        }
+
+        // Initial load
+        showSection('dashboard');
+
+        async function renderDashboard(container) {
+            // Fetch stats if needed
+            const response = await fetch('/api/routes');
+            const routes = await response.json();
+            currentRoutes = routes;
+
+            container.innerHTML = `
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+        <p class="text-gray-500">Selamat datang kembali, Admin.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-blue-100 rounded-xl text-blue-600">
+                    <i data-lucide="ticket" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 font-medium">Tiket Terjual Hari Ini</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-1" id="stat-tickets-today">0</h3>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-green-100 rounded-xl text-green-600">
+                    <i data-lucide="banknote" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 font-medium">Pendapatan Hari Ini</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-1" id="stat-revenue-today">Rp 0</h3>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-amber-100 rounded-xl text-amber-600">
+                    <i data-lucide="bus" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 font-medium">Total Rute Aktif</p>
+            <h3 class="text-3xl font-bold text-gray-900 mt-1" id="stat-routes">0</h3>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-bold text-gray-900">Rute Terbaru</h3>
+            <button onclick="showSection('routes')" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat
+                Semua</button>
+        </div>
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 text-gray-500 text-sm">
+                <tr>
+                    <th class="px-6 py-4 font-medium">Asal & Tujuan</th>
+                    <th class="px-6 py-4 font-medium">Waktu</th>
+                    <th class="px-6 py-4 font-medium">Harga</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                ${routes.slice(0, 5).map(r => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-gray-900">${r.origin} <span class="text-gray-400 mx-1">→</span>
+                            ${r.destination}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500">${r.time}</td>
+                    <td class="px-6 py-4 text-gray-900 font-medium">${r.price}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+    `;
+            lucide.createIcons();
+        }
+
+        async function renderRoutes(container) {
+            const response = await fetch('/api/routes');
+            const routes = await response.json();
+
+            container.innerHTML = `
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Kelola Rute</h1>
+            <p class="text-gray-500">Tambah, edit, atau hapus jadwal keberangkatan.</p>
+        </div>
+        <button onclick="openModal()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-blue-600/30 flex items-center transition transform hover:-translate-y-0.5">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Rute
+        </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
+                <tr>
+                    <th class="px-6 py-4 font-semibold">Asal</th>
+                    <th class="px-6 py-4 font-semibold">Tujuan</th>
+                    <th class="px-6 py-4 font-semibold">Kategori</th>
+                    <th class="px-6 py-4 font-semibold">Berangkat</th>
+                    <th class="px-6 py-4 font-semibold">Harga</th>
+                    <th class="px-6 py-4 font-semibold text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                ${routes.map(r => `
+                <tr class="hover:bg-gray-50 transition group">
+                    <td class="px-6 py-4 font-medium text-gray-900">${r.origin}</td>
+                    <td class="px-6 py-4 text-gray-600">${r.destination}</td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            ${r.category || 'Executive'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                            ${r.time}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 font-medium text-gray-900">${r.price}</td>
+                    <td class="px-6 py-4 text-right flex justify-end gap-2">
+                        <button onclick="openEditModal(${r.id})"
+                            class="text-blue-400 hover:text-blue-600 transition p-2 hover:bg-blue-50 rounded-full">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="deleteRoute(${r.id})"
+                            class="text-red-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-full">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        ${routes.length === 0 ? '<div class="p-8 text-center text-gray-500">Belum ada rute tersimpan.</div>' : ''}
+    </div>
+    `;
+            lucide.createIcons();
+        }
+
+        async function renderContentEditor(container) {
+            const response = await fetch('/api/content');
+            const data = await response.json();
+
+            container.innerHTML = `
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">Konten Website</h1>
+        <p class="text-gray-500">Sesuaikan teks yang tampil di halaman depan.</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-4xl">
+        <form id="content-form" class="space-y-6">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="layout-template" class="w-5 h-5 mr-2 text-blue-600"></i> Hero Section
+                </h3>
+                <div class="grid gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Judul Utama (Hero Title)</label>
+                        <input type="text" name="hero_title" value="${data.hero_title || ''}"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sub-Judul (Hero Subtitle)</label>
+                        <input type="text" name="hero_subtitle" value="${data.hero_subtitle || ''}"
+                            class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 border">
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-100 pt-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="info" class="w-5 h-5 mr-2 text-blue-600"></i> Tentang Kami
+                </h3>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Perusahaan</label>
+                    <textarea name="about_text" rows="4"
+                        class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2.5 border">${data.about_text || ''}</textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4">
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow-lg shadow-blue-600/30 flex items-center transition transform hover:-translate-y-0.5 font-medium">
+                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+    `;
+
+            document.getElementById('content-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const newData = Object.fromEntries(formData.entries());
+
+                await fetch('/api/content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newData)
+                });
+                alert('Konten berhasil disimpan!');
+            });
+            lucide.createIcons();
+        }
+
+        // --- Logic ---
+        async function deleteRoute(id) {
+            if (confirm('Yakin ingin menghapus rute ini?')) {
+                await fetch(`/api/routes?id=${id}`, { method: 'DELETE' });
+                showSection('routes'); // Refresh
+            }
+        }
+
+        // Modal Logic
+        function openModal() { document.getElementById('routeModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('routeModal').classList.add('hidden'); }
+
+        document.getElementById('add-route-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Handle Checkboxes for Facilities
+            const checkboxes = e.target.querySelectorAll('input[name="facilities_checkbox"]:checked');
+            const facilities = Array.from(checkboxes).map(cb => cb.value).join(',');
+            data.facilities = facilities;
+            delete data.facilities_checkbox; // Remove the temporary checkbox field
+
+            // Handle file upload
+            const fileInput = e.target.querySelector('input[name="image_file_input"]');
+            if (fileInput.files.length > 0) {
+                data.image_file = await convertFileToBase64(fileInput.files[0]);
+            }
+
+            await fetch('/api/routes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            closeModal();
+            e.target.reset();
+            showSection('routes');
+        });
+
+        // --- Edit Logic ---
+        let editingRouteId = null;
+
+        async function openEditModal(id) {
+            const response = await fetch(`/api/routes?id=${id}`);
+            const route = await response.json();
+
+            if (route) {
+                editingRouteId = id;
+                document.getElementById('edit-origin').value = route.origin;
+                document.getElementById('edit-destination').value = route.destination;
+                document.getElementById('edit-category').value = route.category || 'Executive Class';
+                document.getElementById('edit-image_url').value = route.image_url || '';
+                document.getElementById('edit-time').value = route.time;
+                document.getElementById('edit-price').value = route.price;
+                document.getElementById('edit-description').value = route.description || '';
+                document.getElementById('edit-seat_capacity').value = route.seat_capacity || 30;
+                document.getElementById('edit-duration').value = route.duration || '';
+
+                // Reset and Populate Facilities
+                document.querySelectorAll('.edit-facility').forEach(cb => cb.checked = false);
+                if (route.facilities) {
+                    const facilities = route.facilities.split(',');
+                    facilities.forEach(f => {
+                        const cb = document.querySelector(`.edit-facility[value="${f}"]`);
+                        if (cb) cb.checked = true;
+                    });
+                }
+
+                document.getElementById('editRouteModal').classList.remove('hidden');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editRouteModal').classList.add('hidden');
+            editingRouteId = null;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Append Edit Modal to body dynamically to avoid cluttering main HTML too much
+            const editModalHTML = `
+    <div id="editRouteModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" aria-hidden="true"
+                onclick="closeEditModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div
+                            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i data-lucide="pencil" class="text-blue-600 w-5 h-5"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Rute</h3>
+                            <div class="mt-4">
+                                <form id="edit-route-form" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kota Asal</label>
+                                        <input type="text" id="edit-origin" name="origin" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kota Tujuan</label>
+                                        <input type="text" id="edit-destination" name="destination" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kategori Bus</label>
+                                        <select id="edit-category" name="category"
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white">
+                                            <option value="Executive Class">Executive Class</option>
+                                            <option value="Sleeper Bus">Sleeper Bus</option>
+                                            <option value="Super Double Decker">Super Double Decker</option>
+                                            <option value="Royal Class">Royal Class</option>
+                                            <option value="Economy Class">Economy Class</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Jumlah Kursi</label>
+                                        <input type="number" id="edit-seat_capacity" name="seat_capacity" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Estimasi Durasi</label>
+                                        <input type="text" id="edit-duration" name="duration"
+                                            placeholder="Contoh: 4 Jam"
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Fasilitas</label>
+                                        <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="AC"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>AC</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="WiFi"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>WiFi</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Toilet"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>Toilet</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="USB"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>USB Port</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Reclining"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>Reclining Seat</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Meal"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>Makan Gratis</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" name="facilities_checkbox" value="Blanket"
+                                                    class="edit-facility rounded text-blue-600 focus:ring-blue-500">
+                                                <span>Selimut</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Deskripsi Singkat</label>
+                                        <textarea id="edit-description" name="description" rows="3"
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="block text-sm font-medium text-gray-700">Foto Bus</label>
+                                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                            <div class="mb-3">
+                                                <label class="text-xs text-gray-500 mb-1 block">Opsi 1: Ganti dengan
+                                                    Upload Baru</label>
+                                                <input type="file" name="image_file_input" accept="image/*"
+                                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                            </div>
+                                            <div class="relative flex py-2 items-center">
+                                                <div class="flex-grow border-t border-gray-200"></div>
+                                                <span class="flex-shrink-0 mx-2 text-gray-400 text-xs">ATAU</span>
+                                                <div class="flex-grow border-t border-gray-200"></div>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-gray-500 mb-1 block">Opsi 2: Edit URL
+                                                    Link</label>
+                                                <input type="url" id="edit-image_url" name="image_url"
+                                                    class="block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Jam Berangkat</label>
+                                            <input type="time" id="edit-time" name="time" required
+                                                class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Harga (Rp)</label>
+                                            <input type="text" id="edit-price" name="price" required
+                                                class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="mt-5 sm:mt-6 flex gap-3">
+                                        <button type="button" onclick="closeEditModal()"
+                                            class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
+                                            Batal
+                                        </button>
+                                        <button type="submit"
+                                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:text-sm">
+                                            Simpan Perubahan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+            document.body.insertAdjacentHTML('beforeend', editModalHTML);
+
+            document.getElementById('edit-route-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+
+                // Handle Checkboxes for Facilities
+                const checkboxes = e.target.querySelectorAll('input[name="facilities_checkbox"]:checked');
+                const facilities = Array.from(checkboxes).map(cb => cb.value).join(',');
+                data.facilities = facilities;
+                delete data.facilities_checkbox;
+
+                // Handle file upload
+                const fileInput = e.target.querySelector('input[name="image_file_input"]');
+                if (fileInput.files.length > 0) {
+                    data.image_file = await convertFileToBase64(fileInput.files[0]);
+                }
+
+                await fetch(`/api/routes?id=${editingRouteId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                closeEditModal();
+                showSection('routes');
+            });
+
+            showSection('dashboard');
+        });
+
+        const convertFileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Bus - Ottobus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-white/90 backdrop-blur-md fixed w-full z-50 border-b border-gray-100 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <a href="/" class="flex items-center gap-2">
+                    <div
+                        class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-600/30">
+                        O</div>
+                    <span class="font-bold text-2xl text-gray-900 tracking-tight">Ottobus<span
+                            class="text-blue-600">.</span></span>
+                </a>
+                <div class="hidden sm:flex sm:items-center space-x-8">
+                    <a href="/" class="text-sm font-medium text-gray-600 hover:text-blue-600 transition">Beranda</a>
+                    <a href="/buses.html" class="text-sm font-bold text-blue-600 transition">Jadwal & Rute</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-blue-600 pt-32 pb-16 text-white text-center px-4">
+        <h1 class="text-3xl font-bold mb-4">Temukan Perjalanan Anda</h1>
+        <p class="text-blue-100 max-w-xl mx-auto">Cari jadwal bus terbaik dengan harga termurah dan fasilitas lengkap
+            untuk perjalanan Anda.</p>
+    </div>
+
+    <!-- Filter Section (Simple) -->
+    <div class="max-w-7xl mx-auto px-4 -mt-8 relative z-10 mb-12">
+        <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">
+            <input type="text" id="search-origin" placeholder="Asal (e.g. Jakarta)"
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="search-dest" placeholder="Tujuan (e.g. Bandung)"
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <button id="search-btn"
+                class="bg-blue-600 text-white px-8 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Cari</button>
+        </div>
+    </div>
+
+    <!-- Routes Grid -->
+    <div class="max-w-7xl mx-auto px-4 pb-24">
+        <div id="routes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Loading -->
+            <div class="col-span-full text-center py-12" id="loading">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-400">
+            &copy; 2024 Ottobus Company. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        let allRoutes = [];
+
+        async function fetchRoutes() {
+            const grid = document.getElementById('routes-grid');
+            const loader = document.getElementById('loading');
+
+            try {
+                const response = await fetch('/api/routes');
+                allRoutes = await response.json();
+                loader.remove();
+
+                renderRoutes(allRoutes);
+            } catch (error) {
+                console.error(error);
+                grid.innerHTML = '<p class="col-span-full text-center text-red-500">Gagal memuat data.</p>';
+            }
+        }
+
+        function renderRoutes(routes) {
+            const grid = document.getElementById('routes-grid');
+            grid.innerHTML = '';
+
+            if (routes.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500 text-lg">Tidak ada jadwal yang ditemukan untuk rute ini.</p></div>';
+                return;
+            }
+
+            routes.forEach(route => {
+                const busType = route.category || 'Executive Class';
+                const seats = route.seat_capacity || 30;
+
+                let headerContent = '';
+                if (route.image_url) {
+                    headerContent = `
+                            <div class="absolute inset-0">
+                                <img src="${route.image_url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="${busType}">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                            </div>
+                        `;
+                } else {
+                    headerContent = `
+                            <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700 opacity-90"></div>
+                        `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'group bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 block';
+
+                card.innerHTML = `
+                        <div class="h-48 bg-gray-200 relative overflow-hidden">
+                            ${headerContent}
+                            <div class="absolute bottom-0 left-0 p-6 text-white z-10 w-full">
+                                <p class="text-xs font-bold uppercase tracking-wider opacity-90 mb-1 px-2 py-1 bg-white/20 backdrop-blur-sm rounded-md inline-block">${busType}</p>
+                                <h4 class="text-2xl font-bold shadow-black drop-shadow-md">${route.origin} <span class="text-blue-300">→</span> ${route.destination}</h4>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center text-gray-600">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span class="font-semibold">${route.time} WIB</span>
+                                </div>
+                                <div class="text-sm text-gray-400">${seats} Kursi Tersedia</div>
+                            </div>
+                            <div class="border-t border-gray-100 py-4 my-2">
+                                 <ul class="text-sm text-gray-500 space-y-2">
+                                    ${renderFacilitiesList(route.facilities)}
+                                 </ul>
+                            </div>
+                            <div class="flex items-center justify-between mt-4">
+                                <div>
+                                    <span class="text-xs text-gray-400 uppercase font-bold">Harga Tiket</span>
+                                    <p class="text-2xl font-bold text-blue-600">${formatIDR(route.price)}</p>
+                                </div>
+                                <a href="/bus-detail.html?id=${route.id}" class="bg-gray-900 text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition shadow-md">
+                                    Detail
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderFacilitiesList(facilitiesStr) {
+            if (!facilitiesStr) return '<li class="text-xs text-gray-400">Fasilitas standar</li>';
+
+            const facilities = facilitiesStr.split(',');
+            // Show only first 2 facilities
+            const shown = facilities.slice(0, 2);
+            let html = shown.map(f => `
+                <li class="flex items-center">
+                    <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    ${f.trim()}
+                </li>
+            `).join('');
+
+            if (facilities.length > 2) {
+                html += `<li class="text-xs text-gray-400 italic">+${facilities.length - 2} fasilitas lainnya</li>`;
+            }
+            return html;
+        }
+
+        const formatIDR = (price) => {
+            if (typeof price === 'string' && price.toLowerCase().includes('rp')) return price;
+            const num = parseFloat(String(price).replace(/[^\d]/g, ''));
+            if (isNaN(num)) return price;
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+        }
+
+        // Search Logic
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const origin = document.getElementById('search-origin').value.toLowerCase();
+            const dest = document.getElementById('search-dest').value.toLowerCase();
+
+            const filtered = allRoutes.filter(route => {
+                const matchOrigin = route.origin.toLowerCase().includes(origin);
+                const matchDest = route.destination.toLowerCase().includes(dest);
+                return matchOrigin && matchDest;
+            });
+
+            renderRoutes(filtered);
+        });
+
+        // Search on Enter Key
+        document.getElementById('search-origin').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('search-btn').click();
+        });
+        document.getElementById('search-dest').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('search-btn').click();
+        });
+
+        fetchRoutes();
+    </script>
+</body>
+
+</html>
