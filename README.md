@@ -154,7 +154,7 @@ http://localhost:8000
 
 **Kiky Restu Noviansyah**  
 NIM: 1123102110  
-Teknik Informatika - Universitas Telkom
+Teknik Informatika - STIKOM Banyuwangi
 
 ---
 
