@@ -177,40 +177,9 @@ def init_db():
                       (3, 3, date_str, '07:00', 200000, 30))
         conn.commit()
 
-    # Migration: Add origin, destination, duration to schedules if not exists (Phase Refactor)
+    # Migration: Add company_id to routes if not exists
     try:
-        c.execute("ALTER TABLE schedules ADD COLUMN origin TEXT")
-        c.execute("ALTER TABLE schedules ADD COLUMN destination TEXT")
-        c.execute("ALTER TABLE schedules ADD COLUMN duration TEXT")
-    except sqlite3.OperationalError:
-        pass
-
-    # REPAIR DATA: Fix null origin/destination for legacy schedules
-    c.execute("SELECT count(*) FROM schedules WHERE origin IS NULL OR origin = ''")
-    if c.fetchone()[0] > 0:
-        print("PERBAIKAN DATA: Mengisi data jadwal yang kosong...")
-        c.execute("UPDATE schedules SET origin='Jakarta', destination='Bandung', duration='3 Jam 30 Menit' WHERE (origin IS NULL OR origin = '') AND id % 3 = 0")
-        c.execute("UPDATE schedules SET origin='Surabaya', destination='Bali (Denpasar)', duration='12 Jam' WHERE (origin IS NULL OR origin = '') AND id % 3 = 1")
-        c.execute("UPDATE schedules SET origin='Yogyakarta', destination='Semarang', duration='3 Jam' WHERE (origin IS NULL OR origin = '') AND id % 3 = 2")
-        conn.commit()
-
-    # Bookings table (User ticket purchases)
-    c.execute('''CREATE TABLE IF NOT EXISTS bookings
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  user_id INTEGER NOT NULL,
-                  schedule_id INTEGER NOT NULL,
-                  seat_numbers TEXT NOT NULL,
-                  total_price INTEGER DEFAULT 0,
-                  payment_method TEXT DEFAULT 'wallet',
-                  status TEXT DEFAULT 'pending',
-                  booking_code TEXT,
-                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                  FOREIGN KEY (user_id) REFERENCES users(id),
-                  FOREIGN KEY (schedule_id) REFERENCES schedules(id))''')
-
-    # Migration: Add wallet_balance to users if not exists
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN wallet_balance INTEGER DEFAULT 500000")
+        c.execute("ALTER TABLE routes ADD COLUMN company_id INTEGER")
     except sqlite3.OperationalError:
         pass
 
@@ -270,63 +239,15 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
             c = conn.cursor()
             
             if route_id:
-                # Still support finding "route" by ID - but now it maps to a schedule group
-                # For compatibility, try to return one representative schedule or keep old logic if table exists
-                # BUT user wants to remove routes table logic.
-                # Let's return a synthetic route object based on available schedules
-                c.execute('''SELECT s.id, s.origin, s.destination, s.duration, s.price, s.departure_time as time,
-                                    b.seat_capacity, b.facilities, b.image_url, b.bus_type as category
-                             FROM schedules s 
-                             JOIN buses b ON s.bus_id = b.id
-                             WHERE s.id = ?''', (route_id,)) # treating route_id as schedule_id for detail view?
-                             # Wait, bus-detail used ?id={route_id}.
-                             # Now it should be schedule-detail. 
-                             # The landing page cards link to bus-detail?id={schedule_id} maybe?
-                             # Or we aggregate by Origin-Dest.
-                
-                # Let's look at the old logic: routes table had ID.
-                # If we aggregate, we don't have a stable ID for "Jakarta-Bandung".
-                # Unless we generate one or use a composite key?
-                # Simplest: bus-detail takes a SCHEDULE ID now. 
-                # Landing page cards should represent specific departure options or a group.
-                
-                # User asked to "remove dependency on routes".
-                # Let's say we still return data from `routes` table IF it exists, but `schedules` is the source of truth for NEW stuff.
-                # BUT the user wants to DELETE the "Kelola Rute" menu.
-                # So we should serve /api/routes from distinct schedules.
-                
-                # If ID is passed, it is likely a SCHEDULE ID in the new paradigm.
-                c.execute('''SELECT s.id, s.origin, s.destination, s.departure_time as time, s.price, s.duration,
-                                    b.seat_capacity, b.facilities, b.image_url, b.bus_type as category,
-                                    co.name as company_name, co.logo_url as company_logo
-                             FROM schedules s
-                             JOIN buses b ON s.bus_id = b.id
-                             LEFT JOIN companies co ON b.company_id = co.id
-                             WHERE s.id=?''', (route_id,))
+                c.execute("SELECT * FROM routes WHERE id=?", (route_id,))
                 row = c.fetchone()
                 if row:
                     result = dict(row)
-                    # Add description if missing from DB or just dynamic
-                    result['description'] = f"Perjalanan {result['origin']} ke {result['destination']} dengan {result['company_name'] or 'Bus'}"
                 else:
                     result = {}
-
             else:
-                # Aggregate schedules to show unique routes (Origin -> Dest)
-                # Actually, landing page cards usually show specific times? 
-                # Or just generic "Jakarta -> All" options?
-                # The existing index.html shows individual cards for each route.
-                # So we can just list ALL active schedules as "cards".
-                c.execute('''SELECT s.id, s.origin, s.destination, s.departure_time as time, s.price, s.duration,
-                                    b.seat_capacity, b.facilities, b.image_url, b.bus_type as category,
-                                    co.name as company_name, co.logo_url as company_logo
-                             FROM schedules s
-                             JOIN buses b ON s.bus_id = b.id
-                             LEFT JOIN companies co ON b.company_id = co.id
-                             WHERE s.status = 'active'
-                             ORDER BY s.departure_date, s.departure_time''')
+                c.execute("SELECT * FROM routes")
                 rows = c.fetchall()
-                result = [dict(row) for row in rows]
                 result = [dict(row) for row in rows]
             
             conn.close()
@@ -344,19 +265,11 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
             c = conn.cursor()
             
             if company_id:
-                c.execute('''SELECT c.*, count(b.id) as bus_count 
-                             FROM companies c 
-                             LEFT JOIN buses b ON c.id = b.company_id 
-                             WHERE c.id=?
-                             GROUP BY c.id''', (company_id,))
+                c.execute("SELECT * FROM companies WHERE id=?", (company_id,))
                 row = c.fetchone()
                 result = dict(row) if row else {}
             else:
-                c.execute('''SELECT c.*, count(b.id) as bus_count 
-                             FROM companies c 
-                             LEFT JOIN buses b ON c.id = b.company_id 
-                             GROUP BY c.id 
-                             ORDER BY c.name''')
+                c.execute("SELECT * FROM companies ORDER BY name")
                 rows = c.fetchall()
                 result = [dict(row) for row in rows]
             
@@ -412,15 +325,14 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
             row_revenue = c.fetchone()
             revenue_today = int(row_revenue['value']) if row_revenue else 0
 
-            # Count distinct routes from schedules (Origin -> Dest)
-            c.execute("SELECT count(DISTINCT origin || destination) FROM schedules")
+            c.execute("SELECT count(*) FROM routes")
             total_routes = c.fetchone()[0]
 
             conn.close()
             self.wfile.write(json.dumps({
                 'tickets_today': tickets_today,
                 'revenue_today': revenue_today,
-                'total_routes': total_routes or 0
+                'total_routes': total_routes
             }).encode())
         elif parsed_path.path == '/api/schedules':
             self.send_response(200)
@@ -437,42 +349,28 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
             c = conn.cursor()
             
             if schedule_id:
-                c.execute('''SELECT s.*, 
-                                    r.origin as legacy_origin, r.destination as legacy_destination, r.category, r.duration as legacy_duration,
+                c.execute('''SELECT s.*, r.origin, r.destination, r.category, r.duration,
                                     b.plate_number, b.bus_type, b.seat_capacity, b.seat_layout, b.facilities,
                                     co.name as company_name
                              FROM schedules s
-                             LEFT JOIN routes r ON s.route_id = r.id
+                             JOIN routes r ON s.route_id = r.id
                              JOIN buses b ON s.bus_id = b.id
                              LEFT JOIN companies co ON b.company_id = co.id
                              WHERE s.id=?''', (schedule_id,))
                 row = c.fetchone()
-                if row:
-                    r = dict(row)
-                    # Fallback for origin/dest if missing in schedule but present in route (legacy)
-                    if not r.get('origin') and r.get('legacy_origin'):
-                        r['origin'] = r['legacy_origin']
-                        r['destination'] = r['legacy_destination']
-                        r['duration'] = r['legacy_duration']
-                    result = r
-                else: 
-                     result = {}
+                result = dict(row) if row else {}
             else:
-                # LIST schedules
-                # Use LEFT JOIN for routes because new schedules might not have route_id
-                sql = '''SELECT s.*, 
-                                r.origin as legacy_origin, r.destination as legacy_destination, r.category, r.duration as legacy_duration,
+                sql = '''SELECT s.*, r.origin, r.destination, r.category, r.duration,
                                 b.plate_number, b.bus_type, b.seat_capacity, b.seat_layout,
                                 co.name as company_name
                          FROM schedules s
-                         LEFT JOIN routes r ON s.route_id = r.id
+                         JOIN routes r ON s.route_id = r.id
                          JOIN buses b ON s.bus_id = b.id
                          LEFT JOIN companies co ON b.company_id = co.id
                          WHERE s.status = 'active' '''
                 params = []
                 if route_id:
-                    # Deprecated filter, but kept for compatibility or specific schedule ID lookup if mislabeled
-                    sql += ' AND s.id = ?' # Assuming route_id passed here might be schedule_id in new context? 
+                    sql += ' AND s.route_id = ?'
                     params.append(route_id)
                 if date_filter:
                     sql += ' AND s.departure_date = ?'
@@ -480,82 +378,10 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
                 sql += ' ORDER BY s.departure_date, s.departure_time'
                 c.execute(sql, params)
                 rows = c.fetchall()
-                print(f"DEBUG: Found {len(rows)} schedules")
-                # Process result to fill origin/dest from routes if missing (migration fallback)
-                result = []
-                for row in rows:
-                    r = dict(row)
-                    print(f"DEBUG: Processing ID {r.get('id')} -> Origin: {r.get('origin')}, Legacy: {r.get('legacy_origin')}")
-                    # If origin is NULL in schedules, try to use legacy_origin from JOIN
-                    if not r.get('origin') and r.get('legacy_origin'):
-                         print(f"DEBUG: APPLYING FALLBACK for ID {r.get('id')}")
-                         r['origin'] = r['legacy_origin']
-                         r['destination'] = r['legacy_destination']
-                         r['duration'] = r['legacy_duration']
-                    result.append(r)
+                result = [dict(row) for row in rows]
             
             conn.close()
             self.wfile.write(json.dumps(result).encode())
-        
-        elif parsed_path.path == '/api/user/profile':
-            # Get user profile by user_id query param
-            query = urllib.parse.parse_qs(parsed_path.query)
-            user_id = query.get('user_id', [None])[0]
-            
-            if not user_id:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'error': 'user_id required'}).encode())
-                return
-            
-            conn = sqlite3.connect(DB_FILE)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            c.execute("SELECT id, name, email, phone, wallet_balance, created_at FROM users WHERE id = ?", (user_id,))
-            user = c.fetchone()
-            conn.close()
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            if user:
-                self.wfile.write(json.dumps(dict(user)).encode())
-            else:
-                self.wfile.write(json.dumps({'error': 'User not found'}).encode())
-        
-        elif parsed_path.path == '/api/bookings':
-            # Get bookings for a user
-            query = urllib.parse.parse_qs(parsed_path.query)
-            user_id = query.get('user_id', [None])[0]
-            
-            conn = sqlite3.connect(DB_FILE)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            
-            if user_id:
-                c.execute('''SELECT b.*, s.origin, s.destination, s.departure_date, s.departure_time, 
-                             s.price, bus.bus_type, co.name as company_name
-                             FROM bookings b
-                             JOIN schedules s ON b.schedule_id = s.id
-                             JOIN buses bus ON s.bus_id = bus.id
-                             LEFT JOIN companies co ON bus.company_id = co.id
-                             WHERE b.user_id = ?
-                             ORDER BY b.created_at DESC''', (user_id,))
-            else:
-                c.execute('''SELECT b.*, s.origin, s.destination, s.departure_date, s.departure_time
-                             FROM bookings b
-                             JOIN schedules s ON b.schedule_id = s.id
-                             ORDER BY b.created_at DESC''')
-            
-            bookings = [dict(row) for row in c.fetchall()]
-            conn.close()
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(bookings).encode())
-        
         else:
             # Clean up path to serve files correctly particularly for /admin
             if self.path == '/admin' or self.path == '/admin/':
@@ -771,18 +597,15 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
         elif parsed_path.path == '/api/schedules':
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
-            # route_id is deprecated/optional
+            route_id = data.get('route_id')
             bus_id = data.get('bus_id')
-            origin = data.get('origin')
-            destination = data.get('destination')
-            duration = data.get('duration', '4 Jam')
             departure_date = data.get('departure_date')
             departure_time = data.get('departure_time')
             price = data.get('price', 0)
             available_seats = data.get('available_seats', 40)
             
-            c.execute("INSERT INTO schedules (bus_id, origin, destination, duration, departure_date, departure_time, price, available_seats) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                      (bus_id, origin, destination, duration, departure_date, departure_time, price, available_seats))
+            c.execute("INSERT INTO schedules (route_id, bus_id, departure_date, departure_time, price, available_seats) VALUES (?, ?, ?, ?, ?, ?)",
+                      (route_id, bus_id, departure_date, departure_time, price, available_seats))
             new_id = c.lastrowid
             conn.commit()
             conn.close()
@@ -898,37 +721,6 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_response(400)
                 self.end_headers()
-        
-        elif parsed_path.path == '/api/schedules':
-            query = urllib.parse.parse_qs(parsed_path.query)
-            schedule_id = query.get('id', [None])[0]
-            
-            if schedule_id:
-                conn = sqlite3.connect(DB_FILE)
-                c = conn.cursor()
-                
-                # route_id is deprecated
-                bus_id = data.get('bus_id')
-                origin = data.get('origin')
-                destination = data.get('destination')
-                duration = data.get('duration')
-                departure_date = data.get('departure_date')
-                departure_time = data.get('departure_time')
-                price = data.get('price', 0)
-                available_seats = data.get('available_seats')
-                
-                c.execute("""UPDATE schedules 
-                             SET bus_id=?, origin=?, destination=?, duration=?, departure_date=?, departure_time=?, price=?, available_seats=?
-                             WHERE id=?""", 
-                          (bus_id, origin, destination, duration, departure_date, departure_time, price, available_seats, schedule_id))
-                conn.commit()
-                conn.close()
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(json.dumps({'status': 'success'}).encode())
-            else:
-                self.send_response(400)
-                self.end_headers()
         else:
             self.send_response(404)
             self.end_headers()
@@ -977,21 +769,6 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
                 conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
                 c.execute("DELETE FROM buses WHERE id=?", (bus_id,))
-                conn.commit()
-                conn.close()
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(json.dumps({'status': 'success'}).encode())
-            else:
-                self.send_response(400)
-                self.end_headers()
-        
-        elif parsed_path.path == '/api/schedules':
-            schedule_id = query.get('id', [None])[0]
-            if schedule_id:
-                conn = sqlite3.connect(DB_FILE)
-                c = conn.cursor()
-                c.execute("DELETE FROM schedules WHERE id=?", (schedule_id,))
                 conn.commit()
                 conn.close()
                 self.send_response(200)

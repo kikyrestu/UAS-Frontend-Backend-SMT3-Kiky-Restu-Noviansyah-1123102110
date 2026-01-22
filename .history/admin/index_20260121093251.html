@@ -530,13 +530,8 @@
                 </div>
             </div>
             <p class="text-sm text-gray-600 mb-4 line-clamp-2">${c.description || 'Tidak ada deskripsi'}</p>
-            <div class="flex items-center justify-between mt-2">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-400 flex items-center" title="Telepon"><i data-lucide="phone" class="w-3 h-3 inline mr-1"></i>${c.phone || '-'}</span>
-                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center" title="Jumlah Armada">
-                        <i data-lucide="bus" class="w-3 h-3 mr-1"></i>${c.bus_count || 0} Unit
-                    </span>
-                </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400"><i data-lucide="phone" class="w-3 h-3 inline mr-1"></i>${c.phone || '-'}</span>
                 <div class="flex gap-2">
                     <button onclick="openEditCompanyModal(${c.id})" class="text-blue-500 hover:text-blue-700 p-2">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -619,13 +614,14 @@
 
         // === SCHEDULES SECTION ===
         async function renderSchedules(container) {
-            const [schedulesRes, busesRes] = await Promise.all([
+            const [schedulesRes, busesRes, routesRes] = await Promise.all([
                 fetch('/api/schedules'),
-                fetch('/api/buses')
+                fetch('/api/buses'),
+                fetch('/api/routes')
             ]);
             const schedules = await schedulesRes.json();
             const buses = await busesRes.json();
-            // const routes no longer needed
+            const routes = await routesRes.json();
 
             container.innerHTML = `
     <div class="flex justify-between items-center mb-8">
@@ -756,10 +752,8 @@
                 editingScheduleId = id;
                 await populateScheduleDropdowns();
                 document.getElementById('scheduleModalTitle').innerText = 'Edit Jadwal';
+                document.getElementById('schedule-route_id').value = sched.route_id || '';
                 document.getElementById('schedule-bus_id').value = sched.bus_id || '';
-                document.getElementById('schedule-origin').value = sched.origin || '';
-                document.getElementById('schedule-destination').value = sched.destination || '';
-                document.getElementById('schedule-duration').value = sched.duration || '';
                 document.getElementById('schedule-departure_date').value = sched.departure_date || '';
                 document.getElementById('schedule-departure_time').value = sched.departure_time || '';
                 document.getElementById('schedule-price').value = sched.price || 0;
@@ -768,50 +762,17 @@
             }
         }
         async function populateScheduleDropdowns() {
-            const busesRes = await fetch('/api/buses');
+            const [routesRes, busesRes] = await Promise.all([fetch('/api/routes'), fetch('/api/buses')]);
+            const routes = await routesRes.json();
             const buses = await busesRes.json();
+
+            document.getElementById('schedule-route_id').innerHTML =
+                '<option value="">-- Pilih Rute --</option>' +
+                routes.map(r => `<option value="${r.id}">${r.origin} → ${r.destination}</option>`).join('');
 
             document.getElementById('schedule-bus_id').innerHTML =
                 '<option value="">-- Pilih Armada --</option>' +
                 buses.map(b => `<option value="${b.id}">${b.plate_number} (${b.company_name || 'N/A'})</option>`).join('');
-        }
-
-        function switchBusImageTab(type) {
-            const uploadTab = document.getElementById('tab-bus-upload');
-            const urlTab = document.getElementById('tab-bus-url');
-            const uploadInput = document.getElementById('input-bus-upload');
-            const urlInput = document.getElementById('input-bus-url');
-
-            if (type === 'upload') {
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                uploadInput.classList.remove('hidden');
-                urlInput.classList.add('hidden');
-            } else {
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                urlInput.classList.remove('hidden');
-                uploadInput.classList.add('hidden');
-            }
-        }
-
-        function switchCompanyLogoTab(type) {
-            const uploadTab = document.getElementById('tab-company-upload');
-            const urlTab = document.getElementById('tab-company-url');
-            const uploadInput = document.getElementById('input-company-upload');
-            const urlInput = document.getElementById('input-company-url');
-
-            if (type === 'upload') {
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                uploadInput.classList.remove('hidden');
-                urlInput.classList.add('hidden');
-            } else {
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                urlInput.classList.remove('hidden');
-                uploadInput.classList.add('hidden');
-            }
         }
 
         // Company Modal Logic
@@ -820,7 +781,6 @@
             editingCompanyId = null;
             document.getElementById('companyModalTitle').innerText = 'Tambah Perusahaan';
             document.getElementById('company-form').reset();
-            switchCompanyLogoTab('upload');
             document.getElementById('companyModal').classList.remove('hidden');
         }
         function closeCompanyModal() {
@@ -849,7 +809,6 @@
             document.getElementById('busModalTitle').innerText = 'Tambah Armada';
             document.getElementById('bus-form').reset();
             await populateBusCompanyDropdown();
-            switchBusImageTab('upload');
             document.getElementById('busModal').classList.remove('hidden');
         }
         function closeBusModal() {
@@ -1157,27 +1116,10 @@
                                 class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    <div class="border-t border-gray-100 pt-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Logo Perusahaan</label>
-                        
-                        <!-- Tabs -->
-                        <div class="flex space-x-4 mb-4 border-b border-gray-100">
-                            <button type="button" onclick="switchCompanyLogoTab('upload')" id="tab-company-upload" class="pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Upload Logo</button>
-                            <button type="button" onclick="switchCompanyLogoTab('url')" id="tab-company-url" class="pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">Gunakan URL</button>
-                        </div>
-
-                        <!-- Upload Input -->
-                        <div id="input-company-upload">
-                            <input type="file" id="company-logo_file" name="logo_file" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG. Maks 2MB.</p>
-                        </div>
-
-                        <!-- URL Input -->
-                        <div id="input-company-url" class="hidden">
-                            <input type="url" id="company-logo_url" name="logo_url" placeholder="https://example.com/logo.png"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                        <input type="url" id="company-logo_url" name="logo_url" placeholder="https://..."
+                            class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
@@ -1199,22 +1141,6 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
-
-                // Handle Logo File
-                const fileInput = document.getElementById('company-logo_file');
-                if (fileInput.files.length > 0) {
-                    try {
-                        const base64 = await convertFileToBase64(fileInput.files[0]);
-                        data.logo_file = base64;
-                        delete data.logo_url;
-                    } catch (err) {
-                        alert('Gagal memproses gambar');
-                        return;
-                    }
-                } else {
-                    delete data.logo_file;
-                    if (!data.logo_url) data.logo_url = '';
-                }
 
                 const method = editingCompanyId ? 'PUT' : 'POST';
                 const url = editingCompanyId ? `/api/companies?id=${editingCompanyId}` : '/api/companies';
@@ -1288,29 +1214,30 @@
                             <label class="flex items-center"><input type="checkbox" name="facilities_cb" value="Blanket" class="bus-facility mr-2"> Blanket</label>
                         </div>
                     </div>
-                    <div class="border-t border-gray-100 pt-4">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Foto Bus</label>
-                        
-                        <!-- Tabs -->
-                        <div class="flex space-x-4 mb-4 border-b border-gray-100">
-                            <button type="button" onclick="switchBusImageTab('upload')" id="tab-bus-upload" class="pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Upload Foto</button>
-                            <button type="button" onclick="switchBusImageTab('url')" id="tab-bus-url" class="pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">Gunakan URL</button>
+                        <!-- Tab Selector -->
+                        <div class="flex border-b border-gray-200 mb-3">
+                            <button type="button" id="tab-url" onclick="switchImageTab('url')" class="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">URL</button>
+                            <button type="button" id="tab-file" onclick="switchImageTab('file')" class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">Upload File</button>
                         </div>
-
-                        <!-- Upload Input -->
-                        <div id="input-bus-upload">
-                            <input type="file" id="bus-image_file" name="image_file" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG. Maks 2MB.</p>
-                        </div>
-
                         <!-- URL Input -->
-                        <div id="input-bus-url" class="hidden">
+                        <div id="input-url" class="">
                             <input type="url" id="bus-image_url" name="image_url" placeholder="https://example.com/bus.jpg"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                                onchange="previewImage('url')">
+                        </div>
+                        <!-- File Input -->
+                        <div id="input-file" class="hidden">
+                            <input type="file" id="bus-image_file" accept="image/*"
+                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700"
+                                onchange="previewImage('file')">
+                        </div>
+                        <!-- Preview -->
+                        <div id="image-preview" class="mt-3 hidden">
+                            <img id="preview-img" src="" alt="Preview" class="h-32 w-full object-cover rounded-lg border border-gray-200">
                         </div>
                     </div>
-
                     <div class="flex gap-3 pt-2">
                         <button type="button" onclick="closeBusModal()" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
                         <button type="submit" class="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
@@ -1332,24 +1259,11 @@
                 data.facilities = Array.from(checkboxes).map(cb => cb.value).join(',');
                 delete data.facilities_cb;
 
-                // Handle Image File
+                // Handle file upload - convert to base64 if file selected
                 const fileInput = document.getElementById('bus-image_file');
-                if (fileInput.files.length > 0) {
-                    try {
-                        const base64 = await convertFileToBase64(fileInput.files[0]);
-                        data.image_file = base64; // Send base64 to backend
-                        delete data.image_url; // Remove URL if file is uploaded
-                    } catch (err) {
-                        alert('Gagal memproses gambar');
-                        return;
-                    }
-                } else {
-                    // If no file, ensure image_file is not sent, and image_url is used if present
-                    delete data.image_file;
-                    if (!data.image_url) {
-                        // If both are empty, ensure image_url is explicitly null or empty string
-                        data.image_url = '';
-                    }
+                if (fileInput.files && fileInput.files[0]) {
+                    data.image_file = await convertFileToBase64(fileInput.files[0]);
+                    delete data.image_url; // Clear URL if file is uploaded
                 }
 
                 const method = editingBusId ? 'PUT' : 'POST';
@@ -1364,6 +1278,53 @@
                 showSection('buses');
             });
 
+            // Image Tab Switching
+            function switchImageTab(tab) {
+                const urlTab = document.getElementById('tab-url');
+                const fileTab = document.getElementById('tab-file');
+                const urlInput = document.getElementById('input-url');
+                const fileInput = document.getElementById('input-file');
+
+                if (tab === 'url') {
+                    urlTab.className = 'px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
+                    fileTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
+                    urlInput.classList.remove('hidden');
+                    fileInput.classList.add('hidden');
+                } else {
+                    fileTab.className = 'px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
+                    urlTab.className = 'px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700';
+                    fileInput.classList.remove('hidden');
+                    urlInput.classList.add('hidden');
+                }
+            }
+
+            function previewImage(source) {
+                const previewDiv = document.getElementById('image-preview');
+                const previewImg = document.getElementById('preview-img');
+
+                if (source === 'url') {
+                    const url = document.getElementById('bus-image_url').value;
+                    if (url) {
+                        previewImg.src = url;
+                        previewDiv.classList.remove('hidden');
+                    } else {
+                        previewDiv.classList.add('hidden');
+                    }
+                } else {
+                    const fileInput = document.getElementById('bus-image_file');
+                    if (fileInput.files && fileInput.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            previewImg.src = e.target.result;
+                            previewDiv.classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(fileInput.files[0]);
+                    } else {
+                        previewDiv.classList.add('hidden');
+                    }
+                }
+            }
+
             // === ADD SCHEDULE MODAL HTML ===
             const scheduleModalHTML = `
     <div id="scheduleModal" class="fixed z-50 inset-0 overflow-y-auto hidden" role="dialog" aria-modal="true">
@@ -1372,22 +1333,12 @@
             <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
                 <h3 class="text-lg font-bold text-gray-900 mb-4" id="scheduleModalTitle">Tambah Jadwal</h3>
                 <form id="schedule-form" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kota Asal</label>
-                            <input type="text" id="schedule-origin" name="origin" required placeholder="Jakarta"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kota Tujuan</label>
-                            <input type="text" id="schedule-destination" name="destination" required placeholder="Bandung"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Durasi Perjalanan</label>
-                        <input type="text" id="schedule-duration" name="duration" required placeholder="4 Jam 30 Menit"
-                             class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rute</label>
+                        <select id="schedule-route_id" name="route_id" required
+                            class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            <option value="">-- Pilih Rute --</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Armada Bus</label>

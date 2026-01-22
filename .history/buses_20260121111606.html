@@ -93,20 +93,6 @@
                 allRoutes = await response.json();
                 loader.remove();
 
-                // Populate Dropdowns
-                const origins = [...new Set(allRoutes.map(r => r.origin))].filter(Boolean).sort();
-                const dests = [...new Set(allRoutes.map(r => r.destination))].filter(Boolean).sort();
-
-                const originSel = document.getElementById('search-origin');
-                const destSel = document.getElementById('search-dest');
-
-                if (originSel) {
-                    originSel.innerHTML = '<option value="">Semua Asal</option>' + origins.map(o => `<option value="${o}">${o}</option>`).join('');
-                }
-                if (destSel) {
-                    destSel.innerHTML = '<option value="">Semua Tujuan</option>' + dests.map(d => `<option value="${d}">${d}</option>`).join('');
-                }
-
                 // Check URL params
                 const params = new URLSearchParams(window.location.search);
                 const pOrigin = params.get('origin');

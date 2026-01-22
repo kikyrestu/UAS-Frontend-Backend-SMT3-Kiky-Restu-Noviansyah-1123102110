@@ -530,13 +530,8 @@
                 </div>
             </div>
             <p class="text-sm text-gray-600 mb-4 line-clamp-2">${c.description || 'Tidak ada deskripsi'}</p>
-            <div class="flex items-center justify-between mt-2">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-400 flex items-center" title="Telepon"><i data-lucide="phone" class="w-3 h-3 inline mr-1"></i>${c.phone || '-'}</span>
-                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center" title="Jumlah Armada">
-                        <i data-lucide="bus" class="w-3 h-3 mr-1"></i>${c.bus_count || 0} Unit
-                    </span>
-                </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400"><i data-lucide="phone" class="w-3 h-3 inline mr-1"></i>${c.phone || '-'}</span>
                 <div class="flex gap-2">
                     <button onclick="openEditCompanyModal(${c.id})" class="text-blue-500 hover:text-blue-700 p-2">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -619,13 +614,14 @@
 
         // === SCHEDULES SECTION ===
         async function renderSchedules(container) {
-            const [schedulesRes, busesRes] = await Promise.all([
+            const [schedulesRes, busesRes, routesRes] = await Promise.all([
                 fetch('/api/schedules'),
-                fetch('/api/buses')
+                fetch('/api/buses'),
+                fetch('/api/routes')
             ]);
             const schedules = await schedulesRes.json();
             const buses = await busesRes.json();
-            // const routes no longer needed
+            const routes = await routesRes.json();
 
             container.innerHTML = `
     <div class="flex justify-between items-center mb-8">
@@ -756,10 +752,8 @@
                 editingScheduleId = id;
                 await populateScheduleDropdowns();
                 document.getElementById('scheduleModalTitle').innerText = 'Edit Jadwal';
+                document.getElementById('schedule-route_id').value = sched.route_id || '';
                 document.getElementById('schedule-bus_id').value = sched.bus_id || '';
-                document.getElementById('schedule-origin').value = sched.origin || '';
-                document.getElementById('schedule-destination').value = sched.destination || '';
-                document.getElementById('schedule-duration').value = sched.duration || '';
                 document.getElementById('schedule-departure_date').value = sched.departure_date || '';
                 document.getElementById('schedule-departure_time').value = sched.departure_time || '';
                 document.getElementById('schedule-price').value = sched.price || 0;
@@ -768,50 +762,17 @@
             }
         }
         async function populateScheduleDropdowns() {
-            const busesRes = await fetch('/api/buses');
+            const [routesRes, busesRes] = await Promise.all([fetch('/api/routes'), fetch('/api/buses')]);
+            const routes = await routesRes.json();
             const buses = await busesRes.json();
+
+            document.getElementById('schedule-route_id').innerHTML =
+                '<option value="">-- Pilih Rute --</option>' +
+                routes.map(r => `<option value="${r.id}">${r.origin} → ${r.destination}</option>`).join('');
 
             document.getElementById('schedule-bus_id').innerHTML =
                 '<option value="">-- Pilih Armada --</option>' +
                 buses.map(b => `<option value="${b.id}">${b.plate_number} (${b.company_name || 'N/A'})</option>`).join('');
-        }
-
-        function switchBusImageTab(type) {
-            const uploadTab = document.getElementById('tab-bus-upload');
-            const urlTab = document.getElementById('tab-bus-url');
-            const uploadInput = document.getElementById('input-bus-upload');
-            const urlInput = document.getElementById('input-bus-url');
-
-            if (type === 'upload') {
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                uploadInput.classList.remove('hidden');
-                urlInput.classList.add('hidden');
-            } else {
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                urlInput.classList.remove('hidden');
-                uploadInput.classList.add('hidden');
-            }
-        }
-
-        function switchCompanyLogoTab(type) {
-            const uploadTab = document.getElementById('tab-company-upload');
-            const urlTab = document.getElementById('tab-company-url');
-            const uploadInput = document.getElementById('input-company-upload');
-            const urlInput = document.getElementById('input-company-url');
-
-            if (type === 'upload') {
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                uploadInput.classList.remove('hidden');
-                urlInput.classList.add('hidden');
-            } else {
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                urlInput.classList.remove('hidden');
-                uploadInput.classList.add('hidden');
-            }
         }
 
         // Company Modal Logic
@@ -820,7 +781,7 @@
             editingCompanyId = null;
             document.getElementById('companyModalTitle').innerText = 'Tambah Perusahaan';
             document.getElementById('company-form').reset();
-            switchCompanyLogoTab('upload');
+            switchCompanyLogoTab('upload'); // Default to upload
             document.getElementById('companyModal').classList.remove('hidden');
         }
         function closeCompanyModal() {
@@ -849,7 +810,6 @@
             document.getElementById('busModalTitle').innerText = 'Tambah Armada';
             document.getElementById('bus-form').reset();
             await populateBusCompanyDropdown();
-            switchBusImageTab('upload');
             document.getElementById('busModal').classList.remove('hidden');
         }
         function closeBusModal() {
@@ -1372,22 +1332,12 @@
             <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
                 <h3 class="text-lg font-bold text-gray-900 mb-4" id="scheduleModalTitle">Tambah Jadwal</h3>
                 <form id="schedule-form" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kota Asal</label>
-                            <input type="text" id="schedule-origin" name="origin" required placeholder="Jakarta"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kota Tujuan</label>
-                            <input type="text" id="schedule-destination" name="destination" required placeholder="Bandung"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Durasi Perjalanan</label>
-                        <input type="text" id="schedule-duration" name="duration" required placeholder="4 Jam 30 Menit"
-                             class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rute</label>
+                        <select id="schedule-route_id" name="route_id" required
+                            class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            <option value="">-- Pilih Rute --</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Armada Bus</label>

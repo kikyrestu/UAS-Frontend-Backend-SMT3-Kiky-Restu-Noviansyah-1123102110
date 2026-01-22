@@ -135,19 +135,10 @@
             }
 
             try {
-                console.log('Fetching route data for ID:', id);
                 const response = await fetch(`/api/routes?id=${id}`);
-                console.log('Response status:', response.status);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
                 const data = await response.json();
-                console.log('Route data received:', data);
 
                 if (!data || !data.id) {
-                    console.error('Invalid data received:', data);
                     alert('Data tidak ditemukan');
                     window.location.href = '/buses.html';
                     return;
@@ -156,25 +147,12 @@
                 // Populate Data
                 document.title = `${data.origin} ke ${data.destination} - Ottobus`;
                 document.getElementById('bus-route').innerText = `${data.origin} → ${data.destination}`;
-
-                // Add Company Info (Badge Style)
-                const categoryEl = document.getElementById('bus-category');
-                categoryEl.parentElement.innerHTML = `
-                    <div class="flex items-center gap-3 mb-4">
-                         <div class="bg-white/90 p-1 rounded-full shadow-sm">
-                            <img src="${data.company_logo || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover">
-                         </div>
-                         <div>
-                            <p class="text-sm font-medium text-white/90 shadow-black drop-shadow-sm">${data.company_name || 'Agen Bus'}</p>
-                            <span class="bg-blue-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block shadow-lg">${data.category || 'Executive'}</span>
-                         </div>
-                    </div>
-                `;
-                // document.getElementById('bus-category').innerText = data.category || 'Executive'; // Replaced above
-
+                document.getElementById('bus-category').innerText = data.category || 'Executive';
                 document.getElementById('detail-origin').innerText = data.origin;
                 document.getElementById('detail-dest').innerText = data.destination;
                 document.getElementById('detail-time').innerText = `${data.time} WIB`;
+                document.getElementById('detail-time').innerText = `${data.time} WIB`;
+                document.getElementById('detail-price').innerText = formatIDR(data.price);
                 document.getElementById('detail-duration').innerText = `Estimasi ${data.duration || '4 - 5 Jam'}`;
 
                 // Dynamic Terminal Logic
@@ -223,12 +201,10 @@
                 document.getElementById('content').classList.remove('hidden');
 
             } catch (error) {
-                console.error('DEBUG FETCH ERROR:', error);
-                alert('Gagal memuat detail: ' + error.message);
+                console.error(error);
+                alert('Gagal memuat detail.');
             }
         });
-
-        // Schedule loading by date
 
         // Schedule loading by date
         const routeId = new URLSearchParams(window.location.search).get('id');

@@ -45,20 +45,10 @@
     <!-- Filter Section (Simple) -->
     <div class="max-w-7xl mx-auto px-4 -mt-8 relative z-10 mb-12">
         <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col md:flex-row gap-4">
-            <div
-                class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-blue-500 relative">
-                <label class="block text-xs text-gray-400 font-bold uppercase mb-1">Dari</label>
-                <select id="search-origin" class="w-full bg-transparent outline-none font-semibold text-gray-800">
-                    <option value="">Semua Asal</option>
-                </select>
-            </div>
-            <div
-                class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-blue-500 relative">
-                <label class="block text-xs text-gray-400 font-bold uppercase mb-1">Ke</label>
-                <select id="search-dest" class="w-full bg-transparent outline-none font-semibold text-gray-800">
-                    <option value="">Semua Tujuan</option>
-                </select>
-            </div>
+            <input type="text" id="search-origin" placeholder="Asal (e.g. Jakarta)"
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="search-dest" placeholder="Tujuan (e.g. Bandung)"
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
             <button id="search-btn"
                 class="bg-blue-600 text-white px-8 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Cari</button>
         </div>
@@ -93,41 +83,7 @@
                 allRoutes = await response.json();
                 loader.remove();
 
-                // Populate Dropdowns
-                const origins = [...new Set(allRoutes.map(r => r.origin))].filter(Boolean).sort();
-                const dests = [...new Set(allRoutes.map(r => r.destination))].filter(Boolean).sort();
-
-                const originSel = document.getElementById('search-origin');
-                const destSel = document.getElementById('search-dest');
-
-                if (originSel) {
-                    originSel.innerHTML = '<option value="">Semua Asal</option>' + origins.map(o => `<option value="${o}">${o}</option>`).join('');
-                }
-                if (destSel) {
-                    destSel.innerHTML = '<option value="">Semua Tujuan</option>' + dests.map(d => `<option value="${d}">${d}</option>`).join('');
-                }
-
-                // Check URL params
-                const params = new URLSearchParams(window.location.search);
-                const pOrigin = params.get('origin');
-                const pDest = params.get('dest');
-
-                if (pOrigin) document.getElementById('search-origin').value = pOrigin;
-                if (pDest) document.getElementById('search-dest').value = pDest;
-
-                if (pOrigin || pDest) {
-                    // Trigger filter
-                    const origin = (pOrigin || '').toLowerCase();
-                    const dest = (pDest || '').toLowerCase();
-                    const filtered = allRoutes.filter(route => {
-                        const matchOrigin = route.origin.toLowerCase().includes(origin);
-                        const matchDest = route.destination.toLowerCase().includes(dest);
-                        return matchOrigin && matchDest;
-                    });
-                    renderRoutes(filtered);
-                } else {
-                    renderRoutes(allRoutes);
-                }
+                renderRoutes(allRoutes);
             } catch (error) {
                 console.error(error);
                 grid.innerHTML = '<p class="col-span-full text-center text-red-500">Gagal memuat data.</p>';
@@ -147,15 +103,6 @@
                 const busType = route.category || 'Executive Class';
                 const seats = route.seat_capacity || 30;
 
-                // Company Badge
-                const companyBadge = `
-                    <div class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md z-20 flex items-center gap-2 border border-blue-50">
-                       <img src="${route.company_logo || 'https://via.placeholder.com/24?text=' + route.company_name?.charAt(0)}" 
-                             class="w-5 h-5 rounded-full object-cover shadow-sm" alt="Logo">
-                       <span class="text-xs font-bold text-gray-800 tracking-tight">${route.company_name || 'Partner Resmi'}</span>
-                    </div>
-                `;
-
                 let headerContent = '';
                 if (route.image_url) {
                     headerContent = `
@@ -163,12 +110,10 @@
                                 <img src="${route.image_url}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="${busType}">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                             </div>
-                            ${companyBadge}
                         `;
                 } else {
                     headerContent = `
                             <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700 opacity-90"></div>
-                            ${companyBadge}
                         `;
                 }
 

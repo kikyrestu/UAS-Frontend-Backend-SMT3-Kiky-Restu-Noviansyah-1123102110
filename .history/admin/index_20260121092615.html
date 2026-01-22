@@ -530,13 +530,8 @@
                 </div>
             </div>
             <p class="text-sm text-gray-600 mb-4 line-clamp-2">${c.description || 'Tidak ada deskripsi'}</p>
-            <div class="flex items-center justify-between mt-2">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-400 flex items-center" title="Telepon"><i data-lucide="phone" class="w-3 h-3 inline mr-1"></i>${c.phone || '-'}</span>
-                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center" title="Jumlah Armada">
-                        <i data-lucide="bus" class="w-3 h-3 mr-1"></i>${c.bus_count || 0} Unit
-                    </span>
-                </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400"><i data-lucide="phone" class="w-3 h-3 inline mr-1"></i>${c.phone || '-'}</span>
                 <div class="flex gap-2">
                     <button onclick="openEditCompanyModal(${c.id})" class="text-blue-500 hover:text-blue-700 p-2">
                         <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -617,90 +612,6 @@
             lucide.createIcons();
         }
 
-        // === SCHEDULES SECTION ===
-        async function renderSchedules(container) {
-            const [schedulesRes, busesRes] = await Promise.all([
-                fetch('/api/schedules'),
-                fetch('/api/buses')
-            ]);
-            const schedules = await schedulesRes.json();
-            const buses = await busesRes.json();
-            // const routes no longer needed
-
-            container.innerHTML = `
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Kelola Jadwal</h1>
-            <p class="text-gray-500">Atur jadwal keberangkatan armada bus.</p>
-        </div>
-        <button onclick="openScheduleModal()"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-blue-600/30 flex items-center transition transform hover:-translate-y-0.5">
-            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambah Jadwal
-        </button>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full text-left">
-            <thead class="bg-gray-50 text-gray-500 text-sm uppercase tracking-wider">
-                <tr>
-                    <th class="px-6 py-4 font-semibold">Rute</th>
-                    <th class="px-6 py-4 font-semibold">Armada</th>
-                    <th class="px-6 py-4 font-semibold">Tanggal</th>
-                    <th class="px-6 py-4 font-semibold">Jam</th>
-                    <th class="px-6 py-4 font-semibold">Harga</th>
-                    <th class="px-6 py-4 font-semibold">Kursi</th>
-                    <th class="px-6 py-4 font-semibold text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                ${schedules.map(s => `
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4">
-                        <span class="font-medium text-gray-900">${s.origin}</span>
-                        <span class="text-gray-400">→</span>
-                        <span class="font-medium text-gray-900">${s.destination}</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm">
-                            <span class="font-medium">${s.plate_number || '-'}</span>
-                            <p class="text-gray-500">${s.company_name || '-'}</p>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-gray-600">${formatDateShort(s.departure_date)}</td>
-                    <td class="px-6 py-4 font-medium text-gray-900">${s.departure_time}</td>
-                    <td class="px-6 py-4 text-blue-600 font-medium">${formatIDR(s.price)}</td>
-                    <td class="px-6 py-4">
-                        <span class="text-green-600 font-medium">${s.available_seats}</span>
-                        <span class="text-gray-400">/ ${s.seat_capacity || '?'}</span>
-                    </td>
-                    <td class="px-6 py-4 text-right flex justify-end gap-2">
-                        <button onclick="openEditScheduleModal(${s.id})" class="text-blue-400 hover:text-blue-600 transition p-2 hover:bg-blue-50 rounded-full">
-                            <i data-lucide="pencil" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="deleteSchedule(${s.id})" class="text-red-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-full">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        ${schedules.length === 0 ? '<div class="p-8 text-center text-gray-500">Belum ada jadwal tersimpan.</div>' : ''}
-    </div>
-    `;
-            lucide.createIcons();
-        }
-
-        function formatDateShort(dateStr) {
-            if (!dateStr) return '-';
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-        }
-
-        function formatIDR(num) {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
-        }
-
         // --- Logic ---
         async function deleteRoute(id) {
             if (confirm('Yakin ingin menghapus rute ini?')) {
@@ -723,96 +634,9 @@
             }
         }
 
-        async function deleteSchedule(id) {
-            if (confirm('Yakin ingin menghapus jadwal ini?')) {
-                await fetch(`/api/schedules?id=${id}`, { method: 'DELETE' });
-                showSection('schedules');
-            }
-        }
-
         // Route Modal Logic
         function openModal() { document.getElementById('routeModal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('routeModal').classList.add('hidden'); }
-
-        // Schedule Modal Logic
-        let editingScheduleId = null;
-        async function openScheduleModal() {
-            editingScheduleId = null;
-            document.getElementById('scheduleModalTitle').innerText = 'Tambah Jadwal';
-            document.getElementById('schedule-form').reset();
-            await populateScheduleDropdowns();
-            // Set default date to today
-            document.getElementById('schedule-departure_date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('scheduleModal').classList.remove('hidden');
-        }
-        function closeScheduleModal() {
-            document.getElementById('scheduleModal').classList.add('hidden');
-            editingScheduleId = null;
-        }
-        async function openEditScheduleModal(id) {
-            const response = await fetch(`/api/schedules?id=${id}`);
-            const sched = await response.json();
-            if (sched) {
-                editingScheduleId = id;
-                await populateScheduleDropdowns();
-                document.getElementById('scheduleModalTitle').innerText = 'Edit Jadwal';
-                document.getElementById('schedule-bus_id').value = sched.bus_id || '';
-                document.getElementById('schedule-origin').value = sched.origin || '';
-                document.getElementById('schedule-destination').value = sched.destination || '';
-                document.getElementById('schedule-duration').value = sched.duration || '';
-                document.getElementById('schedule-departure_date').value = sched.departure_date || '';
-                document.getElementById('schedule-departure_time').value = sched.departure_time || '';
-                document.getElementById('schedule-price').value = sched.price || 0;
-                document.getElementById('schedule-available_seats').value = sched.available_seats || 40;
-                document.getElementById('scheduleModal').classList.remove('hidden');
-            }
-        }
-        async function populateScheduleDropdowns() {
-            const busesRes = await fetch('/api/buses');
-            const buses = await busesRes.json();
-
-            document.getElementById('schedule-bus_id').innerHTML =
-                '<option value="">-- Pilih Armada --</option>' +
-                buses.map(b => `<option value="${b.id}">${b.plate_number} (${b.company_name || 'N/A'})</option>`).join('');
-        }
-
-        function switchBusImageTab(type) {
-            const uploadTab = document.getElementById('tab-bus-upload');
-            const urlTab = document.getElementById('tab-bus-url');
-            const uploadInput = document.getElementById('input-bus-upload');
-            const urlInput = document.getElementById('input-bus-url');
-
-            if (type === 'upload') {
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                uploadInput.classList.remove('hidden');
-                urlInput.classList.add('hidden');
-            } else {
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                urlInput.classList.remove('hidden');
-                uploadInput.classList.add('hidden');
-            }
-        }
-
-        function switchCompanyLogoTab(type) {
-            const uploadTab = document.getElementById('tab-company-upload');
-            const urlTab = document.getElementById('tab-company-url');
-            const uploadInput = document.getElementById('input-company-upload');
-            const urlInput = document.getElementById('input-company-url');
-
-            if (type === 'upload') {
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                uploadInput.classList.remove('hidden');
-                urlInput.classList.add('hidden');
-            } else {
-                urlTab.className = 'pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600';
-                uploadTab.className = 'pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700';
-                urlInput.classList.remove('hidden');
-                uploadInput.classList.add('hidden');
-            }
-        }
 
         // Company Modal Logic
         let editingCompanyId = null;
@@ -820,7 +644,6 @@
             editingCompanyId = null;
             document.getElementById('companyModalTitle').innerText = 'Tambah Perusahaan';
             document.getElementById('company-form').reset();
-            switchCompanyLogoTab('upload');
             document.getElementById('companyModal').classList.remove('hidden');
         }
         function closeCompanyModal() {
@@ -849,7 +672,6 @@
             document.getElementById('busModalTitle').innerText = 'Tambah Armada';
             document.getElementById('bus-form').reset();
             await populateBusCompanyDropdown();
-            switchBusImageTab('upload');
             document.getElementById('busModal').classList.remove('hidden');
         }
         function closeBusModal() {
@@ -1157,27 +979,10 @@
                                 class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    <div class="border-t border-gray-100 pt-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Logo Perusahaan</label>
-                        
-                        <!-- Tabs -->
-                        <div class="flex space-x-4 mb-4 border-b border-gray-100">
-                            <button type="button" onclick="switchCompanyLogoTab('upload')" id="tab-company-upload" class="pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Upload Logo</button>
-                            <button type="button" onclick="switchCompanyLogoTab('url')" id="tab-company-url" class="pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">Gunakan URL</button>
-                        </div>
-
-                        <!-- Upload Input -->
-                        <div id="input-company-upload">
-                            <input type="file" id="company-logo_file" name="logo_file" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG. Maks 2MB.</p>
-                        </div>
-
-                        <!-- URL Input -->
-                        <div id="input-company-url" class="hidden">
-                            <input type="url" id="company-logo_url" name="logo_url" placeholder="https://example.com/logo.png"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                        <input type="url" id="company-logo_url" name="logo_url" placeholder="https://..."
+                            class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
@@ -1199,22 +1004,6 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
-
-                // Handle Logo File
-                const fileInput = document.getElementById('company-logo_file');
-                if (fileInput.files.length > 0) {
-                    try {
-                        const base64 = await convertFileToBase64(fileInput.files[0]);
-                        data.logo_file = base64;
-                        delete data.logo_url;
-                    } catch (err) {
-                        alert('Gagal memproses gambar');
-                        return;
-                    }
-                } else {
-                    delete data.logo_file;
-                    if (!data.logo_url) data.logo_url = '';
-                }
 
                 const method = editingCompanyId ? 'PUT' : 'POST';
                 const url = editingCompanyId ? `/api/companies?id=${editingCompanyId}` : '/api/companies';
@@ -1288,29 +1077,11 @@
                             <label class="flex items-center"><input type="checkbox" name="facilities_cb" value="Blanket" class="bus-facility mr-2"> Blanket</label>
                         </div>
                     </div>
-                    <div class="border-t border-gray-100 pt-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Foto Bus</label>
-                        
-                        <!-- Tabs -->
-                        <div class="flex space-x-4 mb-4 border-b border-gray-100">
-                            <button type="button" onclick="switchBusImageTab('upload')" id="tab-bus-upload" class="pb-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">Upload Foto</button>
-                            <button type="button" onclick="switchBusImageTab('url')" id="tab-bus-url" class="pb-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">Gunakan URL</button>
-                        </div>
-
-                        <!-- Upload Input -->
-                        <div id="input-bus-upload">
-                            <input type="file" id="bus-image_file" name="image_file" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG. Maks 2MB.</p>
-                        </div>
-
-                        <!-- URL Input -->
-                        <div id="input-bus-url" class="hidden">
-                            <input type="url" id="bus-image_url" name="image_url" placeholder="https://example.com/bus.jpg"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Foto Bus (URL)</label>
+                        <input type="url" id="bus-image_url" name="image_url" placeholder="https://..."
+                            class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-
                     <div class="flex gap-3 pt-2">
                         <button type="button" onclick="closeBusModal()" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
                         <button type="submit" class="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
@@ -1332,26 +1103,6 @@
                 data.facilities = Array.from(checkboxes).map(cb => cb.value).join(',');
                 delete data.facilities_cb;
 
-                // Handle Image File
-                const fileInput = document.getElementById('bus-image_file');
-                if (fileInput.files.length > 0) {
-                    try {
-                        const base64 = await convertFileToBase64(fileInput.files[0]);
-                        data.image_file = base64; // Send base64 to backend
-                        delete data.image_url; // Remove URL if file is uploaded
-                    } catch (err) {
-                        alert('Gagal memproses gambar');
-                        return;
-                    }
-                } else {
-                    // If no file, ensure image_file is not sent, and image_url is used if present
-                    delete data.image_file;
-                    if (!data.image_url) {
-                        // If both are empty, ensure image_url is explicitly null or empty string
-                        data.image_url = '';
-                    }
-                }
-
                 const method = editingBusId ? 'PUT' : 'POST';
                 const url = editingBusId ? `/api/buses?id=${editingBusId}` : '/api/buses';
 
@@ -1362,90 +1113,6 @@
                 });
                 closeBusModal();
                 showSection('buses');
-            });
-
-            // === ADD SCHEDULE MODAL HTML ===
-            const scheduleModalHTML = `
-    <div id="scheduleModal" class="fixed z-50 inset-0 overflow-y-auto hidden" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeScheduleModal()"></div>
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-4" id="scheduleModalTitle">Tambah Jadwal</h3>
-                <form id="schedule-form" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kota Asal</label>
-                            <input type="text" id="schedule-origin" name="origin" required placeholder="Jakarta"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kota Tujuan</label>
-                            <input type="text" id="schedule-destination" name="destination" required placeholder="Bandung"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Durasi Perjalanan</label>
-                        <input type="text" id="schedule-duration" name="duration" required placeholder="4 Jam 30 Menit"
-                             class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Armada Bus</label>
-                        <select id="schedule-bus_id" name="bus_id" required
-                            class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500 bg-white">
-                            <option value="">-- Pilih Armada --</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                            <input type="date" id="schedule-departure_date" name="departure_date" required
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jam</label>
-                            <input type="time" id="schedule-departure_time" name="departure_time" required
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Harga (Rp)</label>
-                            <input type="number" id="schedule-price" name="price" required placeholder="100000"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kursi Tersedia</label>
-                            <input type="number" id="schedule-available_seats" name="available_seats" value="40"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
-                    <div class="flex gap-3 pt-2">
-                        <button type="button" onclick="closeScheduleModal()" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
-                        <button type="submit" class="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>`;
-            document.body.insertAdjacentHTML('beforeend', scheduleModalHTML);
-
-            // Schedule form handler
-            document.getElementById('schedule-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const data = Object.fromEntries(formData.entries());
-
-                const method = editingScheduleId ? 'PUT' : 'POST';
-                const url = editingScheduleId ? `/api/schedules?id=${editingScheduleId}` : '/api/schedules';
-
-                await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                closeScheduleModal();
-                showSection('schedules');
             });
 
             showSection('dashboard');

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Pemesanan - Ottobus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen pb-20 md:pb-0">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">O</span>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">Ottobus.</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="/profile.html" class="text-gray-600 hover:text-blue-600 text-sm font-medium">Profil</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Riwayat Pemesanan</h1>
+            <p class="text-gray-500 text-sm">Semua tiket yang pernah Anda pesan</p>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+            <button
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium whitespace-nowrap">Semua</button>
+            <button
+                class="px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 whitespace-nowrap hover:bg-gray-50">Aktif</button>
+            <button
+                class="px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 whitespace-nowrap hover:bg-gray-50">Selesai</button>
+            <button
+                class="px-4 py-2 bg-white text-gray-600 rounded-lg text-sm font-medium border border-gray-200 whitespace-nowrap hover:bg-gray-50">Dibatalkan</button>
+        </div>
+
+        <!-- Bookings List -->
+        <div id="bookings-list" class="space-y-4">
+            <!-- Loading State -->
+            <div id="loading" class="text-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-gray-500">Memuat riwayat...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-16">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="ticket" class="w-12 h-12 text-gray-300"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Belum Ada Pemesanan</h3>
+            <p class="text-gray-500 mb-6">Kamu belum pernah memesan tiket. Yuk pesan sekarang!</p>
+            <a href="/buses.html"
+                class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                <i data-lucide="search" class="w-5 h-5"></i> Cari Bus
+            </a>
+        </div>
+    </main>
+
+    <!-- Bottom Nav (Mobile) -->
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50 md:hidden">
+        <div class="grid grid-cols-4 h-16 items-center">
+            <a href="/"
+                class="flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 h-full w-full transition">
+                <i data-lucide="home" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </a>
+            <a href="/history.html" class="flex flex-col items-center justify-center text-blue-600 h-full w-full">
+                <i data-lucide="file-text" class="w-5 h-5 mb-1 text-blue-600"></i>
+                <span class="text-[10px] font-bold">Bookings</span>
+            </a>
+            <a href="#"
+                class="flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 h-full w-full transition">
+                <i data-lucide="help-circle" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px] font-medium">Help</span>
+            </a>
+            <a href="/profile.html"
+                class="flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 h-full w-full transition">
+                <i data-lucide="user" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px] font-medium">Account</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function checkAuth() {
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                window.location.href = '/login.html?redirect=/history.html';
+                return null;
+            }
+            return JSON.parse(userData);
+        }
+
+        async function loadBookings() {
+            const user = checkAuth();
+            if (!user) return;
+
+            const listEl = document.getElementById('bookings-list');
+            const loadingEl = document.getElementById('loading');
+            const emptyEl = document.getElementById('empty-state');
+
+            try {
+                const response = await fetch(`/api/bookings?user_id=${user.id}`);
+                const bookings = await response.json();
+
+                loadingEl.classList.add('hidden');
+
+                if (bookings.length === 0) {
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                listEl.innerHTML = bookings.map(booking => `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+                        <div class="p-4 md:p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">${booking.company_name || 'Ottobus'}</p>
+                                    <h3 class="text-lg font-bold text-gray-900">${booking.origin} → ${booking.destination}</h3>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs font-bold ${getStatusClass(booking.status)}">${getStatusLabel(booking.status)}</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-400">Tanggal</p>
+                                    <p class="font-semibold text-gray-900">${formatDate(booking.departure_date)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Waktu</p>
+                                    <p class="font-semibold text-gray-900">${booking.departure_time} WIB</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Kursi</p>
+                                    <p class="font-semibold text-gray-900">${booking.seat_numbers}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Total</p>
+                                    <p class="font-semibold text-blue-600">${formatIDR(booking.total_price)}</p>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                                <p class="text-xs text-gray-400">Kode Booking: <span class="font-mono font-bold text-gray-600">${booking.booking_code || 'N/A'}</span></p>
+                                ${booking.status === 'confirmed' ? `<button class="text-sm text-blue-600 font-medium hover:underline">Lihat E-Tiket</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                loadingEl.innerHTML = '<p class="text-red-500">Gagal memuat riwayat.</p>';
+            }
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'confirmed': return 'bg-green-100 text-green-700';
+                case 'pending': return 'bg-yellow-100 text-yellow-700';
+                case 'cancelled': return 'bg-red-100 text-red-700';
+                default: return 'bg-gray-100 text-gray-700';
+            }
+        }
+
+        function getStatusLabel(status) {
+            switch (status) {
+                case 'confirmed': return 'Dikonfirmasi';
+                case 'pending': return 'Menunggu';
+                case 'cancelled': return 'Dibatalkan';
+                default: return status;
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function formatIDR(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount || 0);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadBookings);
+    </script>
+</body>
+
+</html>

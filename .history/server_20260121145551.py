@@ -201,16 +201,16 @@ def init_db():
                   schedule_id INTEGER NOT NULL,
                   seat_numbers TEXT NOT NULL,
                   total_price INTEGER DEFAULT 0,
-                  payment_method TEXT DEFAULT 'wallet',
-                  status TEXT DEFAULT 'pending',
-                  booking_code TEXT,
+                  payment_method TEXT DEFAULT 'ewallet',
+                  payment_status TEXT DEFAULT 'pending',
+                  booking_code TEXT UNIQUE,
                   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                   FOREIGN KEY (user_id) REFERENCES users(id),
                   FOREIGN KEY (schedule_id) REFERENCES schedules(id))''')
 
-    # Migration: Add wallet_balance to users if not exists
+    # Migration: Add ewallet_balance to users if not exists
     try:
-        c.execute("ALTER TABLE users ADD COLUMN wallet_balance INTEGER DEFAULT 500000")
+        c.execute("ALTER TABLE users ADD COLUMN ewallet_balance INTEGER DEFAULT 500000")
     except sqlite3.OperationalError:
         pass
 
@@ -496,66 +496,6 @@ class OttobusHandler(http.server.SimpleHTTPRequestHandler):
             
             conn.close()
             self.wfile.write(json.dumps(result).encode())
-        
-        elif parsed_path.path == '/api/user/profile':
-            # Get user profile by user_id query param
-            query = urllib.parse.parse_qs(parsed_path.query)
-            user_id = query.get('user_id', [None])[0]
-            
-            if not user_id:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'error': 'user_id required'}).encode())
-                return
-            
-            conn = sqlite3.connect(DB_FILE)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            c.execute("SELECT id, name, email, phone, wallet_balance, created_at FROM users WHERE id = ?", (user_id,))
-            user = c.fetchone()
-            conn.close()
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            if user:
-                self.wfile.write(json.dumps(dict(user)).encode())
-            else:
-                self.wfile.write(json.dumps({'error': 'User not found'}).encode())
-        
-        elif parsed_path.path == '/api/bookings':
-            # Get bookings for a user
-            query = urllib.parse.parse_qs(parsed_path.query)
-            user_id = query.get('user_id', [None])[0]
-            
-            conn = sqlite3.connect(DB_FILE)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            
-            if user_id:
-                c.execute('''SELECT b.*, s.origin, s.destination, s.departure_date, s.departure_time, 
-                             s.price, bus.bus_type, co.name as company_name
-                             FROM bookings b
-                             JOIN schedules s ON b.schedule_id = s.id
-                             JOIN buses bus ON s.bus_id = bus.id
-                             LEFT JOIN companies co ON bus.company_id = co.id
-                             WHERE b.user_id = ?
-                             ORDER BY b.created_at DESC''', (user_id,))
-            else:
-                c.execute('''SELECT b.*, s.origin, s.destination, s.departure_date, s.departure_time
-                             FROM bookings b
-                             JOIN schedules s ON b.schedule_id = s.id
-                             ORDER BY b.created_at DESC''')
-            
-            bookings = [dict(row) for row in c.fetchall()]
-            conn.close()
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(bookings).encode())
-        
         else:
             # Clean up path to serve files correctly particularly for /admin
             if self.path == '/admin' or self.path == '/admin/':

@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ottobus - Perjalanan Nyaman & Aman</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -33,8 +32,6 @@
                     <a href="#home" class="text-sm font-medium text-gray-600 hover:text-blue-600 transition">Beranda</a>
                     <a href="#routes" class="text-sm font-medium text-gray-600 hover:text-blue-600 transition">Jadwal &
                         Rute</a>
-                    <a href="/history.html"
-                        class="text-sm font-medium text-gray-600 hover:text-blue-600 transition">Riwayat</a>
                     <a href="#about" class="text-sm font-medium text-gray-600 hover:text-blue-600 transition">Tentang
                         Kami</a>
                     <div id="auth-nav">
@@ -508,14 +505,11 @@
             if (userData) {
                 const user = JSON.parse(userData);
                 authNav.innerHTML = `
-        <div class="flex items-center gap-4">
-            <a href="/profile.html" class="text-sm font-medium text-gray-600 hover:text-blue-600 transition flex items-center gap-1">
-                <i data-lucide="user" class="w-4 h-4"></i> ${user.name.split(' ')[0]}
-            </a>
+        <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-600">Halo, ${user.name.split(' ')[0]}</span>
             <button onclick="logout()" class="text-sm font-medium text-red-600 hover:text-red-700">Keluar</button>
         </div>
         `;
-                lucide.createIcons(); // Re-init icons after dynamic content
             } else {
                 authNav.innerHTML = `<a href="/login.html"
             class="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Masuk</a>`;

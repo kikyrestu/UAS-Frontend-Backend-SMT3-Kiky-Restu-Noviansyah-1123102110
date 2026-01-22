@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Saya - Ottobus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen pb-20 md:pb-0">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <a href="/" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">O</span>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">Ottobus.</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="/history.html" class="text-gray-600 hover:text-blue-600 text-sm font-medium">Riwayat</a>
+                    <button onclick="logout()"
+                        class="text-red-600 hover:text-red-700 text-sm font-medium">Keluar</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Profile Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 md:p-8 text-white mb-6 shadow-xl">
+            <div class="flex items-center gap-4">
+                <div class="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-3xl font-bold"
+                    id="avatar">
+                    ?
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold" id="user-name">Memuat...</h1>
+                    <p class="text-blue-200 text-sm" id="user-email">-</p>
+                    <p class="text-blue-200 text-sm" id="user-phone">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- E-Wallet Card -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                        <i data-lucide="wallet" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Saldo OttoPay</p>
+                        <p class="text-2xl font-bold text-gray-900" id="wallet-balance">Rp 0</p>
+                    </div>
+                </div>
+                <button
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Top Up
+                </button>
+            </div>
+            <div class="flex gap-4 pt-4 border-t border-gray-100">
+                <div class="flex-1 text-center p-3 bg-gray-50 rounded-lg">
+                    <i data-lucide="send" class="w-5 h-5 mx-auto text-gray-500 mb-1"></i>
+                    <p class="text-xs text-gray-500">Transfer</p>
+                </div>
+                <div class="flex-1 text-center p-3 bg-gray-50 rounded-lg">
+                    <i data-lucide="history" class="w-5 h-5 mx-auto text-gray-500 mb-1"></i>
+                    <p class="text-xs text-gray-500">Mutasi</p>
+                </div>
+                <div class="flex-1 text-center p-3 bg-gray-50 rounded-lg">
+                    <i data-lucide="qr-code" class="w-5 h-5 mx-auto text-gray-500 mb-1"></i>
+                    <p class="text-xs text-gray-500">QR Pay</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <a href="/history.html"
+                class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center">
+                <i data-lucide="ticket" class="w-8 h-8 mx-auto text-blue-600 mb-2"></i>
+                <p class="text-sm font-medium text-gray-700">Tiket Saya</p>
+            </a>
+            <a href="/buses.html"
+                class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition text-center">
+                <i data-lucide="bus" class="w-8 h-8 mx-auto text-indigo-600 mb-2"></i>
+                <p class="text-sm font-medium text-gray-700">Pesan Bus</p>
+            </a>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center opacity-50">
+                <i data-lucide="gift" class="w-8 h-8 mx-auto text-orange-500 mb-2"></i>
+                <p class="text-sm font-medium text-gray-700">Promo</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center opacity-50">
+                <i data-lucide="headphones" class="w-8 h-8 mx-auto text-purple-600 mb-2"></i>
+                <p class="text-sm font-medium text-gray-700">Bantuan</p>
+            </div>
+        </div>
+
+        <!-- Account Settings -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="font-bold text-gray-900">Pengaturan Akun</h2>
+            </div>
+            <div class="divide-y divide-gray-100">
+                <a href="#" class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="user" class="w-5 h-5 text-gray-400"></i>
+                        <span class="text-gray-700">Edit Profil</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+                </a>
+                <a href="#" class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                        <span class="text-gray-700">Ubah Password</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+                </a>
+                <a href="#" class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="bell" class="w-5 h-5 text-gray-400"></i>
+                        <span class="text-gray-700">Notifikasi</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Nav (Mobile) -->
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50 md:hidden">
+        <div class="grid grid-cols-4 h-16 items-center">
+            <a href="/"
+                class="flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 h-full w-full transition">
+                <i data-lucide="home" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </a>
+            <a href="/history.html"
+                class="flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 h-full w-full transition">
+                <i data-lucide="file-text" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px] font-medium">Bookings</span>
+            </a>
+            <a href="#"
+                class="flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 h-full w-full transition">
+                <i data-lucide="help-circle" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px] font-medium">Help</span>
+            </a>
+            <a href="/profile.html" class="flex flex-col items-center justify-center text-blue-600 h-full w-full">
+                <i data-lucide="user" class="w-5 h-5 mb-1 text-blue-600"></i>
+                <span class="text-[10px] font-bold">Account</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function checkAuth() {
+            const userData = localStorage.getItem('user_data');
+            if (!userData) {
+                window.location.href = '/login.html?redirect=/profile.html';
+                return null;
+            }
+            return JSON.parse(userData);
+        }
+
+        async function loadProfile() {
+            const user = checkAuth();
+            if (!user) return;
+
+            // Update UI with cached data first
+            document.getElementById('user-name').textContent = user.name;
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-phone').textContent = user.phone || 'No phone';
+            document.getElementById('avatar').textContent = user.name.charAt(0).toUpperCase();
+
+            // Fetch fresh data from API
+            try {
+                const response = await fetch(`/api/user/profile?user_id=${user.id}`);
+                const profile = await response.json();
+
+                if (profile.wallet_balance !== undefined) {
+                    document.getElementById('wallet-balance').textContent = formatIDR(profile.wallet_balance);
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function formatIDR(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function logout() {
+            localStorage.removeItem('user_token');
+            localStorage.removeItem('user_data');
+            window.location.href = '/';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+
+</html>
